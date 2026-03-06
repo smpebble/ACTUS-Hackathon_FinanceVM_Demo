@@ -1,0 +1,1189 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ACTUS-FVM · FinanceVM Demo</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ECharts for Professional Visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            navy: { 950: '#040814', 900: '#0a0f1e', 800: '#10172d', 700: '#16203f', 600: '#1d2a54' },
+            accent: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
+            neon: { blue: '#00f0ff', purple: '#8b5cf6', green: '#10b981' }
+          },
+          animation: {
+            'blob': 'blob 7s infinite',
+            'spin-slow': 'spin 3s linear infinite',
+            'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          },
+          keyframes: {
+            blob: {
+              '0%': { transform: 'translate(0px, 0px) scale(1)' },
+              '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+              '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+              '100%': { transform: 'translate(0px, 0px) scale(1)' }
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: 1, boxShadow: '0 0 15px rgba(14,165,233, 0.4)' },
+              '50%': { opacity: .7, boxShadow: '0 0 5px rgba(14,165,233, 0.1)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: #040814;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    /* Background Glow Effects */
+    .bg-glow-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .glow-orb-1 {
+      position: absolute;
+      top: -10%;
+      left: -5%;
+      width: 40vw;
+      height: 40vw;
+      background: rgba(14, 165, 233, 0.15);
+      filter: blur(120px);
+      border-radius: 50%;
+    }
+
+    .glow-orb-2 {
+      position: absolute;
+      bottom: -10%;
+      right: -5%;
+      width: 50vw;
+      height: 50vw;
+      background: rgba(139, 92, 246, 0.12);
+      filter: blur(120px);
+      border-radius: 50%;
+    }
+
+    /* Glassmorphism Classes */
+    .glass-panel {
+      background: rgba(16, 23, 45, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .glass-card-hover {
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .glass-card-hover:hover {
+      transform: translateY(-4px);
+      background: rgba(22, 32, 63, 0.6);
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 10px 40px -10px rgba(14, 165, 233, 0.3);
+    }
+
+    /* Tabs */
+    .tab-active {
+      border-bottom: 2px solid #38bdf8;
+      color: #38bdf8;
+      background: linear-gradient(to top, rgba(56, 189, 248, 0.1) 0%, transparent 100%);
+    }
+
+    .tab-inactive {
+      border-bottom: 2px solid transparent;
+      color: #64748b;
+    }
+
+    .tab-inactive:hover {
+      color: #cbd5e1;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Formatting */
+    .payoff-pos {
+      color: #10b981;
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .payoff-neg {
+      color: #f43f5e;
+      text-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+    }
+
+    .payoff-zero {
+      color: #64748b;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(4, 8, 20, 0.8);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.3);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(56, 189, 248, 0.6);
+    }
+
+    /* Spinner */
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin .7s linear infinite;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.15rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.70rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+
+<body class="dark antialiased selection:bg-accent-500/30">
+
+  <!-- Background Glow Elements -->
+  <div class="bg-glow-container">
+    <div class="glow-orb-1 animate-blob"></div>
+    <div class="glow-orb-2 animate-blob" style="animation-delay: 2s;"></div>
+  </div>
+
+  <!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+  <header class="glass-panel sticky top-0 z-40 border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div
+          class="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent-400 to-indigo-600 p-0.5 shadow-lg shadow-accent-500/30">
+          <div class="flex h-full w-full items-center justify-center rounded-[10px] bg-navy-950/50 backdrop-blur-sm">
+            <span class="font-bold text-white text-sm tracking-widest">FV</span>
+          </div>
+        </div>
+        <div>
+          <div
+            class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">
+            FinanceVM <span class="text-accent-400 font-light text-sm ml-1">v2.0</span></div>
+          <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+            <span>ACTUS Hackathon 2025</span>
+            <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+            <span>AIMICHIA TECHNOLOGY CO., LTD.</span>
+          </div>
+        </div>
+      </div>
+      <div id="health-badge" class="badge bg-slate-800/80 text-slate-400 border border-slate-700 backdrop-blur-md">●
+        connecting…</div>
+    </div>
+  </header>
+
+  <!-- Setup Modal -->
+  <div id="setup-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center hidden bg-navy-950/80 backdrop-blur-sm transition-opacity">
+    <div class="glass-panel w-full max-w-md p-8 rounded-2xl relative border border-white/10 shadow-2xl">
+      <h3 id="modal-title" class="text-xl font-bold text-white mb-2 tracking-tight">Configure Scenario</h3>
+      <p id="modal-desc" class="text-xs text-slate-400 mb-6 font-medium">Adjust the parameters for this scenario.</p>
+
+      <div class="flex flex-col gap-5 mb-8">
+        <div>
+          <label class="block text-[10px] text-accent-400 uppercase tracking-[0.2em] font-bold mb-2">Principal /
+            Notional</label>
+          <input type="number" id="input-notional"
+            class="w-full bg-navy-900/50 border border-white/10 rounded-xl p-3 text-sm text-white font-mono focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 transition-colors"
+            value="10000000">
+        </div>
+        <div>
+          <label class="block text-[10px] text-accent-400 uppercase tracking-[0.2em] font-bold mb-2">Interest / Coupon
+            Rate (%)</label>
+          <input type="number" id="input-rate" step="0.01"
+            class="w-full bg-navy-900/50 border border-white/10 rounded-xl p-3 text-sm text-white font-mono focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 transition-colors"
+            value="3.5">
+        </div>
+        <div id="spread-container" class="hidden">
+          <label class="block text-[10px] text-accent-400 uppercase tracking-[0.2em] font-bold mb-2">Spread
+            (bps)</label>
+          <input type="number" id="input-spread" step="1"
+            class="w-full bg-navy-900/50 border border-white/10 rounded-xl p-3 text-sm text-white font-mono focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500 transition-colors"
+            value="50">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-white/5">
+        <button id="modal-cancel"
+          class="px-5 py-2.5 rounded-xl font-bold text-xs text-slate-400 hover:text-white hover:bg-white/5 transition-all">Cancel</button>
+        <button id="modal-submit"
+          class="px-5 py-2.5 rounded-xl font-bold text-xs text-navy-950 bg-accent-400 hover:bg-accent-300 shadow-[0_0_15px_-3px_rgba(56,189,248,0.4)] transition-all">Launch
+          Scenario</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SCENARIO CARDS ═════════════════════════════ -->
+  <main class="max-w-7xl mx-auto px-6 py-10 relative z-10">
+
+    <!-- Stack row -->
+    <div class="mb-3 text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">Integrated Interoperability Stack
+    </div>
+    <div class="flex flex-wrap gap-2.5 mb-10">
+      <span class="badge border border-slate-700 bg-navy-800/50 text-slate-300">ACTUS Contract</span>
+      <span class="badge border border-slate-700 bg-navy-800/50 text-slate-300">Financial Execution Kernel (FEK)</span>
+      <span class="badge border border-slate-700 bg-navy-800/50 text-slate-300">ISO 20022</span>
+      <span class="badge border border-slate-700 bg-navy-800/50 text-slate-300">vLEI Auth</span>
+      <span class="badge border border-slate-700 bg-navy-800/50 text-slate-300">Shopspring/Decimal</span>
+      <span class="badge border border-slate-700 bg-navy-800/50 text-slate-300">Solidity Codegen</span>
+    </div>
+
+    <div class="flex items-center justify-between mb-5">
+      <div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">Available Scenarios</div>
+    </div>
+
+    <div id="scenario-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+      <!-- injected by JS -->
+    </div>
+
+    <!-- Run All button -->
+    <div class="flex items-center gap-5 mb-12">
+      <button id="run-all-btn"
+        class="group relative px-6 py-3 rounded-xl font-bold text-sm text-white overflow-hidden transition-all hover:scale-[1.02] shadow-[0_0_30px_-10px_rgba(14,165,233,0.4)]">
+        <div
+          class="absolute inset-0 w-full h-full bg-gradient-to-r from-accent-600 to-indigo-600 transition-all group-hover:from-accent-500 group-hover:to-indigo-500">
+        </div>
+        <span class="relative flex items-center gap-2">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+              clip-rule="evenodd" fill-rule="evenodd"></path>
+          </svg>
+          Execute All Scenarios
+        </span>
+      </button>
+      <div id="global-spinner" class="hidden flex items-center gap-3">
+        <div class="spinner"></div>
+        <span class="text-xs font-mono text-accent-400 animate-pulse">Computing Matrix...</span>
+      </div>
+      <span id="run-status" class="text-sm font-medium text-slate-400"></span>
+    </div>
+
+    <!-- ══════════════════════════ RESULTS AREA ═══════════════════════════ -->
+    <div id="results-area" class="hidden fade-in">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="h-px bg-gradient-to-r from-accent-500/50 to-transparent flex-1"></div>
+        <div class="text-[10px] text-accent-400 uppercase tracking-[0.2em] font-bold">Execution Results & Analysis</div>
+        <div class="h-px bg-gradient-to-l from-accent-500/50 to-transparent flex-1"></div>
+      </div>
+      <div id="results-container" class="space-y-8"></div>
+    </div>
+
+  </main>
+
+  <!-- ═══════════════════════════════ FOOTER ════════════════════════════════ -->
+  <footer class="border-t border-white/5 bg-navy-950/80 backdrop-blur-sm mt-16 py-8 relative z-10 w-full">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <div class="text-xs text-slate-500 font-medium tracking-wide">
+        ACTUS-FVM &copy; 2025 &nbsp;&middot;&nbsp; Designed for the ACTUS Standard Hackathon
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════ SCRIPT ════════════════════════════════ -->
+  <script>
+    // ── helpers ──────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // Format a numeric value to 5 decimal places with rounding + thousands separator.
+    function fmt5(val) {
+      const n = parseFloat(val);
+      if (isNaN(n) || Math.abs(n) < 1e-8) return '0.00000';
+      const fixed = n.toFixed(5);
+      const [intPart, decPart] = fixed.split('.');
+      const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return intFormatted + '.' + decPart;
+    }
+
+    // Format a numeric value to 2 decimal places (standard currency)
+    function fmtCurrency(val) {
+      const n = parseFloat(val);
+      if (isNaN(n) || Math.abs(n) < 1e-4) return '0.00';
+      const fixed = n.toFixed(2);
+      const [intPart, decPart] = fixed.split('.');
+      const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return intFormatted + '.' + decPart;
+    }
+
+    async function apiFetch(path, opts = {}) {
+      const r = await fetch(path, opts);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    }
+
+    // ── health check ─────────────────────────────────────────────────────────
+    async function checkHealth() {
+      const el = $('health-badge');
+      try {
+        const data = await apiFetch('/api/health');
+        if (data.status === 'ok') {
+          el.className = 'badge border border-green-500/30 bg-green-900/40 text-green-400 backdrop-blur-md shadow-[0_0_10px_rgba(16,185,129,0.2)]';
+          el.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-green-400 mr-1.5 animate-pulse"></span> SYSTEM ONLINE';
+        }
+      } catch {
+        el.className = 'badge border border-red-500/30 bg-red-900/40 text-red-400 backdrop-blur-md shadow-[0_0_10px_rgba(244,63,94,0.2)]';
+        el.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5"></span> API OFFLINE';
+      }
+    }
+
+    // ── scenario cards ────────────────────────────────────────────────────────
+    const CONTRACT_COLORS = {
+      PAM: 'from-violet-900/40 to-violet-800/10 text-violet-300 border-violet-500/30 shadow-violet-500/10',
+      ANN: 'from-amber-900/40  to-amber-800/10  text-amber-300  border-amber-500/30 shadow-amber-500/10',
+      SWAPS: 'from-teal-900/40   to-teal-800/10   text-teal-300   border-teal-500/30 shadow-teal-500/10',
+    };
+
+    const SCENARIO_ICONS = {
+      stablecoin: '<svg class="w-6 h-6 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+      bond: '<svg class="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>',
+      loan: '<svg class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>',
+      derivative: '<svg class="w-6 h-6 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>'
+    };
+
+    async function loadScenarioCards() {
+      try {
+        const metas = await apiFetch('/api/scenarios');
+        const container = $('scenario-cards');
+        container.innerHTML = '';
+        metas.forEach((m, idx) => {
+          const colorCls = CONTRACT_COLORS[m.contract] || 'from-slate-800/40 to-slate-900/10 text-slate-300 border-slate-500/30 shadow-slate-500/10';
+          const div = document.createElement('div');
+
+          div.className = `glass-panel glass-card-hover cursor-pointer rounded-2xl flex flex-col gap-4 p-5 min-h-[160px] relative overflow-hidden`;
+          // Staggered entry animation
+          div.style.opacity = '0';
+          div.style.animation = `fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 0.1}s forwards`;
+
+          div.dataset.scenario = m.id;
+          div.innerHTML = `
+        <div class="absolute inset-0 bg-gradient-to-br ${colorCls} opacity-30"></div>
+        <div class="relative z-10 flex items-start justify-between">
+          <div class="w-10 h-10 rounded-xl bg-navy-900/80 border border-white/5 flex items-center justify-center text-xl shadow-inner backdrop-blur-md">
+            ${SCENARIO_ICONS[m.id] || '📊'}
+          </div>
+          <span class="badge border border-white/10 bg-black/20 backdrop-blur-sm text-[10px] text-white/80">${m.contract}</span>
+        </div>
+        <div class="relative z-10 mt-2">
+          <div class="font-bold text-base text-white mb-1 tracking-tight">${esc(m.name)}</div>
+          <div class="text-xs text-slate-400 leading-relaxed font-medium mb-3">${esc(m.description)}</div>
+          <div class="p-3 rounded-xl bg-navy-950/60 border border-white/5 text-[10px] leading-relaxed text-slate-300">
+             <span class="text-accent-400 font-bold uppercase tracking-wider block mb-1">Contract Choice:</span>
+             ${esc(m.explanation || '')}
+          </div>
+        </div>
+        <div class="relative z-10 mt-auto pt-4 flex items-center text-xs font-bold text-accent-400 group-hover:text-accent-300 transition-colors uppercase tracking-wider">
+          Configure <svg class="w-3 h-3 ml-1 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </div>`;
+          div.addEventListener('click', () => openSetupModal(m.id, m));
+          container.appendChild(div);
+        });
+      } catch (e) {
+        $('scenario-cards').innerHTML = '<div class="col-span-full p-4 text-center text-red-400 text-sm font-mono glass-panel rounded-xl">Failed to load scenarios. Is Backend running?</div>';
+      }
+    }
+
+    let currentScenarioId = null;
+
+    function openSetupModal(id, m) {
+      currentScenarioId = id;
+      $('setup-modal').classList.remove('hidden');
+      $('modal-title').textContent = m.name;
+
+      if (id === 'bond') {
+        $('input-notional').value = 100000000;
+        $('input-rate').value = 3.5;
+        $('spread-container').classList.add('hidden');
+        $('input-rate').parentElement.classList.remove('hidden');
+      } else if (id === 'loan') {
+        $('input-notional').value = 10000000;
+        $('input-rate').value = 4.5;
+        $('spread-container').classList.add('hidden');
+        $('input-rate').parentElement.classList.remove('hidden');
+      } else if (id === 'derivative') {
+        $('input-notional').value = 50000000;
+        $('input-rate').value = 3.0;
+        $('spread-container').classList.remove('hidden');
+        $('input-spread').value = 50;
+        $('input-rate').parentElement.classList.remove('hidden');
+      } else if (id === 'stablecoin') {
+        $('input-notional').value = 1000000;
+        $('input-rate').value = 0;
+        $('spread-container').classList.add('hidden');
+        $('input-rate').parentElement.classList.add('hidden');
+      } else {
+        $('input-notional').value = 1000000;
+        $('input-rate').value = 3.0;
+        $('spread-container').classList.add('hidden');
+        $('input-rate').parentElement.classList.remove('hidden');
+      }
+    }
+
+    $('modal-cancel').addEventListener('click', () => {
+      $('setup-modal').classList.add('hidden');
+    });
+
+    $('modal-submit').addEventListener('click', () => {
+      $('setup-modal').classList.add('hidden');
+
+      const params = {
+        notional: parseFloat($('input-notional').value),
+        rate: parseFloat($('input-rate').value) / 100.0
+      };
+      if (currentScenarioId === 'derivative') {
+        params.spread = parseFloat($('input-spread').value) / 10000.0;
+      }
+
+      runScenario(currentScenarioId, params);
+    });
+
+    // ── run scenario(s) ───────────────────────────────────────────────────────
+    function setLoading(active, message = '') {
+      $('global-spinner').classList.toggle('hidden', !active);
+      if (!active) {
+        $('run-status').innerHTML = `<span class="badge border border-emerald-500/30 bg-emerald-900/20 text-emerald-400 backdrop-blur-sm px-3 py-1 text-[10px]">${message}</span>`;
+      } else {
+        $('run-status').innerHTML = '';
+      }
+      const btn = $('run-all-btn');
+      btn.disabled = active;
+      btn.classList.toggle('opacity-50', active);
+      btn.classList.toggle('pointer-events-none', active);
+    }
+
+    async function runScenario(id, params = {}) {
+      setLoading(true, `Computing matrix...`);
+      try {
+        const data = await apiFetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario: id, params: params }),
+        });
+        showResults(data);
+        setLoading(false, `EXECUTION COMPLETED IN ${data.duration} · ${data.totalEvents} EVENTS PROCESSED`);
+      } catch (e) {
+        setLoading(false, `ERR: ${e.message}`);
+        $('run-status').querySelector('span').className = "badge border border-red-500/30 bg-red-900/20 text-red-400 backdrop-blur-sm px-3 py-1 text-[10px]";
+      }
+    }
+
+    $('run-all-btn').addEventListener('click', () => runScenario('all', {}));
+
+    // ── render results ────────────────────────────────────────────────────────
+    function showResults(data) {
+      const area = $('results-area');
+      const container = $('results-container');
+      area.classList.remove('hidden');
+      container.innerHTML = '';
+
+      const chartInitQueue = [];
+
+      (data.results || []).forEach((result, idx) => {
+        const section = buildScenarioSection(result, idx, chartInitQueue);
+        container.appendChild(section);
+      });
+
+      area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Initialize ECharts instances after DOM injection
+      requestAnimationFrame(() => {
+        chartInitQueue.forEach(fn => fn());
+      });
+    }
+
+    function buildScenarioSection(result, idx, chartInitQueue) {
+      const section = document.createElement('div');
+      section.className = 'glass-panel rounded-2xl overflow-hidden fade-in relative group';
+
+      // Subtle top highlight
+      const highlight = document.createElement('div');
+      highlight.className = 'absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent-500/50 to-transparent';
+      section.appendChild(highlight);
+
+      // header
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between px-6 py-5 bg-navy-900/60 border-b border-white/5 relative z-10';
+      header.innerHTML = `
+    <div>
+      <div class="text-[10px] text-accent-400 uppercase tracking-[0.2em] font-bold mb-1">Scenario Processed</div>
+      <div class="font-bold text-xl text-white tracking-tight flex items-center gap-2">
+        ${esc(result.name)}
+        ${result.instrument ? `<span class="badge border border-slate-600 bg-slate-800 text-slate-300 ml-2 text-[10px]">${esc(result.instrument.actusContractType)}</span>` : ''}
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex flex-col items-end">
+        <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Event Yield</span>
+        <span class="text-sm font-mono text-emerald-400 font-bold">${result.cashFlowEvents?.length || 0}</span>
+      </div>
+      <div class="w-10 h-10 rounded-full border border-emerald-500/30 bg-emerald-900/20 flex items-center justify-center text-emerald-400">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+      </div>
+    </div>`;
+      section.appendChild(header);
+
+      // tabs
+      const TABS = [
+        { id: 'cashflows', label: 'Cashflows & Analysis' },
+        { id: 'risk', label: 'Risk & Stress Test' },
+        { id: 'precision', label: 'Precision Metrics' },
+        { id: 'iso20022', label: 'ISO 20022 Data' },
+        { id: 'vlei', label: 'vLEI Auth' },
+        { id: 'solidity', label: 'Smart Contracts' },
+      ];
+
+      const tabBar = document.createElement('div');
+      tabBar.className = 'flex gap-2 px-4 pt-2 border-b border-white/5 bg-navy-950/40 overflow-x-auto custom-scrollbar relative z-10';
+
+      const panes = {};
+      TABS.forEach((t, i) => {
+        const btn = document.createElement('button');
+        btn.className = `px-5 py-3 text-xs font-bold tracking-wide uppercase transition-all rounded-t-lg mx-1 ${i === 0 ? 'tab-active' : 'tab-inactive'}`;
+        btn.textContent = t.label;
+        btn.addEventListener('click', () => {
+          tabBar.querySelectorAll('button').forEach(b => { b.className = 'px-5 py-3 text-xs font-bold tracking-wide uppercase transition-all rounded-t-lg mx-1 tab-inactive'; });
+          btn.className = 'px-5 py-3 text-xs font-bold tracking-wide uppercase transition-all rounded-t-lg mx-1 tab-active';
+          Object.values(panes).forEach(p => {
+            p.classList.add('hidden');
+            p.classList.remove('fade-in');
+          });
+          panes[t.id].classList.remove('hidden');
+          // Trigger reflow for animation
+          void panes[t.id].offsetWidth;
+          panes[t.id].classList.add('fade-in');
+
+          // Resize chart if making cashflows visible
+          if (t.id === 'cashflows' && window.echartsInstances && window.echartsInstances[idx]) {
+            window.echartsInstances[idx].resize();
+          }
+        });
+        tabBar.appendChild(btn);
+      });
+      section.appendChild(tabBar);
+
+      const body = document.createElement('div');
+      body.className = 'p-6 bg-navy-900/20 backdrop-blur-sm relative z-10';
+      section.appendChild(body);
+
+      // build panes
+      TABS.forEach((t, i) => {
+        const pane = document.createElement('div');
+        pane.className = i === 0 ? 'fade-in' : 'hidden'; // add fade-in on load for first
+        panes[t.id] = pane;
+        body.appendChild(pane);
+      });
+
+      // — Cashflows pane with Chart
+      const cashflowRes = buildCashflowPane(result.cashFlowEvents, idx);
+      panes.cashflows.innerHTML = cashflowRes.html;
+      if (cashflowRes.renderChart) chartInitQueue.push(cashflowRes.renderChart);
+
+      // — Risk Pane
+      panes.risk.innerHTML = buildRiskPane(result.riskAnalysis, result.scenarioType?.toLowerCase() || 'all', result.params || {});
+
+      // — Precision pane
+      panes.precision.innerHTML = buildPrecisionTable(result.precisionTests);
+
+      // — ISO 20022 pane
+      panes.iso20022.innerHTML = buildISO20022(result.iso20022Messages);
+
+      // — vLEI pane
+      panes.vlei.innerHTML = buildVLEI(result.vleiVerification);
+
+      // — Solidity pane
+      panes.solidity.innerHTML = buildSolidity(result.solidityFiles);
+
+      return section;
+    }
+
+    function buildRiskPane(riskData, scenarioId) {
+      if (!riskData) return '<p class="text-slate-500 text-sm font-medium">Risk Analysis data unavailable.</p>';
+
+      const panelId = 'rp-' + Math.random().toString(36).slice(2, 7);
+
+      const cards = [
+        { key: 'marketRisk', label: 'Market Risk (VaR 99%)', val: riskData.marketRisk || 0, color: 'text-amber-400', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6', desc: '1-day maximum loss at 99% confidence. Formula: NPV × σ × Z × √(1/252)' },
+        { key: 'creditRisk', label: 'Credit Risk (ECL)', val: riskData.creditRisk || 0, color: 'text-rose-400', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', desc: 'Expected Credit Loss: NPV × PD × LGD' },
+        { key: 'liquidityRisk', label: 'Liquidity Risk (LCR Diff)', val: riskData.liquidityRisk || 0, color: 'text-sky-400', icon: 'M13 10V3L4 14h7v7l9-11h-7z', desc: 'Liquidity cost proxied by Bid/Ask Spread' },
+        { key: 'counterpartyRisk', label: 'Counterparty Risk (CVA)', val: riskData.counterpartyRisk || 0, color: 'text-violet-400', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', desc: 'Credit Valuation Adjustment (CVA): ECL × 0.5 (SWAPS)' },
+        { key: 'stressTestImpact', label: 'Stress Test Impact', val: riskData.stressTestImpact || 0, color: 'text-red-500 font-bold', icon: 'M13 17h8m0 0V9m0 8l-8-8-4 4-6-6', desc: 'NPV impact of a parallel yield curve shift by Δr bps' },
+      ];
+
+      const mkCard = c => `
+        <div class="glass-panel border border-white/5 p-5 rounded-2xl flex flex-col justify-between hover:bg-white/[0.02] transition-colors group" id="${panelId}-card-${c.key}">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-navy-900/50 flex items-center justify-center ${c.color}">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${c.icon}"></path></svg>
+            </div>
+            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider flex-1">${c.label}</div>
+            <div class="relative group/tip cursor-help text-slate-600 hover:text-slate-400">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <div class="absolute right-0 bottom-5 w-52 p-3 bg-navy-800 border border-white/10 rounded-xl text-[10px] text-slate-300 z-50 opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none shadow-2xl leading-relaxed">${c.desc}</div>
+            </div>
+          </div>
+          <div class="${c.color} text-xl font-mono tracking-tight group-hover:scale-105 transition-transform origin-left risk-val">${fmtCurrency(c.val)}</div>
+        </div>`;
+
+      const paramDefs = [
+        { id: 'vol', label: 'Volatility (σ)', unit: '%', min: 1, max: 60, step: 0.5, def: 15 },
+        { id: 'confidence', label: 'Confidence Level (α)', unit: '%', min: 90, max: 99.9, step: 0.1, def: 99 },
+        { id: 'stressShift', label: 'Stress Shift (Δr)', unit: 'bps', min: 25, max: 500, step: 25, def: 200 },
+        { id: 'pd', label: 'Probability of Default (PD)', unit: '%', min: 0.01, max: 30, step: 0.01, def: 2 },
+        { id: 'lgd', label: 'Loss Given Default (LGD)', unit: '%', min: 10, max: 90, step: 5, def: 45 },
+      ];
+
+      const mkSlider = p => `
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-[10px] text-slate-400 font-semibold">${p.label}</label>
+            <div class="flex items-center gap-1">
+              <span class="text-[11px] font-mono font-bold text-accent-300" id="${panelId}-val-${p.id}">${p.def}</span>
+              <span class="text-[10px] text-slate-500">${p.unit}</span>
+            </div>
+          </div>
+          <input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.def}"
+            id="${panelId}-slider-${p.id}" class="w-full h-1.5 cursor-pointer accent-sky-400"
+            oninput="document.getElementById('${panelId}-val-${p.id}').textContent=parseFloat(this.value).toFixed(${p.step < 1 ? 2 : 0})">
+          <div class="flex justify-between text-[9px] text-slate-600 font-mono"><span>${p.min}${p.unit}</span><span>${p.max}${p.unit}</span></div>
+        </div>`;
+
+      return `
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold">Quantitative Risk Analysis &amp; Stress Test</div>
+          <button onclick="toggleRiskParams('${panelId}')" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg border border-accent-500/30 bg-accent-600/10 text-accent-300 hover:bg-accent-600/20 transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            ⚙ Risk Parameters
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">${cards.map(mkCard).join('')}</div>
+
+        <div id="${panelId}-params" class="hidden mt-2 border border-accent-500/20 rounded-2xl bg-navy-900/60 overflow-hidden">
+          <div class="px-5 py-3 border-b border-white/5 bg-black/20">
+            <div class="text-xs font-bold text-slate-200 mb-0.5">QuantLib Risk Model Parameters &amp; Dynamic Adjustment</div>
+            <div class="text-[10px] text-slate-500">Drag the sliders then click 'Recalculate' to see live results.</div>
+          </div>
+          <div class="px-5 pt-4 pb-3 overflow-x-auto">
+            <table class="w-full text-left mb-3 min-w-[560px]">
+              <thead><tr class="border-b border-white/5 text-[9px] text-slate-500 uppercase tracking-wider">
+                <th class="pb-2 pr-5">Parameter</th><th class="pb-2 pr-4">Formula</th><th class="pb-2 pr-4">Range</th><th class="pb-2">Affects</th>
+              </tr></thead>
+              <tbody class="text-[9px] text-slate-400">
+                <tr class="border-b border-white/[0.03]"><td class="py-1.5 pr-5 text-amber-400 font-semibold">σ (Volatility)</td><td class="pr-4 font-mono text-emerald-300 whitespace-nowrap">VaR = NPV × σ × Z × √(1/252)</td><td class="pr-4">1–60%</td><td>Market Risk</td></tr>
+                <tr class="border-b border-white/[0.03]"><td class="py-1.5 pr-5 text-sky-400 font-semibold">α (Confidence)</td><td class="pr-4 font-mono text-emerald-300 whitespace-nowrap">99%→Z=2.326 | 95%→Z=1.645</td><td class="pr-4">90–99.9%</td><td>Market Risk</td></tr>
+                <tr class="border-b border-white/[0.03]"><td class="py-1.5 pr-5 text-red-400 font-semibold">Δr (Stress Shift)</td><td class="pr-4 font-mono text-emerald-300 whitespace-nowrap">ΔNPV = Σ CF × [disc(r+Δr) − disc(r)]</td><td class="pr-4">25–500bps</td><td>Stress Impact</td></tr>
+                <tr class="border-b border-white/[0.03]"><td class="py-1.5 pr-5 text-rose-400 font-semibold">PD (Default Probability)</td><td class="pr-4 font-mono text-emerald-300 whitespace-nowrap">ECL = NPV × PD × LGD</td><td class="pr-4">0.01–30%</td><td>Credit / CVA</td></tr>
+                <tr><td class="py-1.5 pr-5 text-violet-400 font-semibold">LGD (Loss Given Default)</td><td class="pr-4 font-mono text-emerald-300 whitespace-nowrap">ECL = NPV × PD × LGD</td><td class="pr-4">10–90%</td><td>Credit / CVA</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 pb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">${paramDefs.map(mkSlider).join('')}</div>
+          <div class="px-5 pb-5 flex items-center gap-3">
+            <button onclick="rerunRiskAnalysis('${panelId}','${scenarioId || 'all'}')"
+              class="flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl border border-emerald-500/40 bg-emerald-900/20 text-emerald-400 hover:bg-emerald-900/40 transition-colors">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Recalculate (QuantLib)
+            </button>
+            <span id="${panelId}-status" class="text-[10px] text-slate-500"></span>
+          </div>
+        </div>`;
+    }
+
+    window.toggleRiskParams = function (panelId) {
+      const el = document.getElementById(panelId + '-params');
+      if (el) el.classList.toggle('hidden');
+    };
+
+    window.rerunRiskAnalysis = async function (panelId, scenarioId) {
+      const statusEl = document.getElementById(panelId + '-status');
+      statusEl.textContent = '⏳ Calculating…'; statusEl.className = 'text-[10px] text-slate-400';
+
+      const gv = id => parseFloat(document.getElementById(`${panelId}-slider-${id}`)?.value || 0);
+      const vol = gv('vol') / 100, conf = gv('confidence'), stressShift = gv('stressShift');
+      const pd = gv('pd') / 100, lgd = gv('lgd') / 100;
+
+      const zMap = { 90: 1.282, 91: 1.341, 92: 1.405, 93: 1.476, 94: 1.555, 95: 1.645, 96: 1.751, 97: 1.881, 98: 2.054, 99: 2.326 };
+      let zScore = 2.326, bestD = Infinity;
+      for (const [k, v] of Object.entries(zMap)) { const d = Math.abs(conf - k); if (d < bestD) { zScore = v; bestD = d; } }
+
+      try {
+        const res = await fetch('/api/run', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scenario: scenarioId || 'all',
+            params: { vol: String(vol), zScore: String(zScore), stressShiftBps: String(stressShift), pd: String(pd), lgd: String(lgd) }
+          })
+        });
+        const data = await res.json();
+        if (!data.success || !data.results?.length) { statusEl.textContent = '❌ ' + data.error; return; }
+        const nr = data.results[0].riskAnalysis;
+        if (!nr) { statusEl.textContent = '❌ No risk data returned'; return; }
+        ['marketRisk', 'creditRisk', 'liquidityRisk', 'counterpartyRisk', 'stressTestImpact'].forEach(k => {
+          const card = document.getElementById(`${panelId}-card-${k}`);
+          const el = card?.querySelector('.risk-val'); if (!el) return;
+          el.style.opacity = '0'; el.style.transition = 'opacity 0.35s';
+          setTimeout(() => { el.textContent = fmtCurrency(nr[k] || 0); el.style.opacity = '1'; }, 300);
+        });
+        statusEl.className = 'text-[10px] text-emerald-400';
+        statusEl.textContent = `✓ σ=${(vol * 100).toFixed(1)}% · PD=${(pd * 100).toFixed(2)}% · Δr=${stressShift}bps`;
+      } catch (e) { statusEl.className = 'text-[10px] text-red-400'; statusEl.textContent = '❌ ' + e.message; }
+    };
+
+    // ── cashflows & charts ───────────────────────────────────────────────────
+    function payoffClass(val) {
+      const n = parseFloat(val);
+      if (isNaN(n) || n === 0) return 'payoff-zero';
+      return n > 0 ? 'payoff-pos' : 'payoff-neg';
+    }
+
+    function buildCashflowPane(events, scbIdx) {
+      if (!events || events.length === 0)
+        return { html: '<p class="text-slate-500 text-sm font-medium">No cashflow events generated.</p>', renderChart: null };
+
+      const chartId = `chart - sc - ${scbIdx} -${Math.random().toString(36).slice(2, 7)} `;
+      // Sort events by time just in case
+      const sorted = [...events].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+      // HTML Structure: Chart on top, Table on bottom
+      const html = `
+        <div class="flex flex-col gap-8">
+      <!-- Chart Container -->
+      <div class="border border-white/5 bg-navy-950/50 rounded-2xl p-4 shadow-inner">
+         <div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-2 ml-2">Cashflow Projection Visualized</div>
+         <div id="${chartId}" style="width: 100%; height: 350px;"></div>
+      </div>
+      <!--Table Container-->
+        <div>
+          <div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-3">Raw Event Ledger</div>
+          ${buildCashflowTable(sorted)}
+        </div>
+    </div>
+        `;
+
+      const renderChart = () => {
+        const dom = document.getElementById(chartId);
+        if (!dom) return;
+
+        const chart = echarts.init(dom, 'dark', { renderer: 'canvas' });
+        if (!window.echartsInstances) window.echartsInstances = {};
+        window.echartsInstances[scbIdx] = chart; // save for resizing
+
+        const dates = sorted.map(e => {
+          const d = new Date(e.time);
+          return isNaN(d) ? e.time : d.toISOString().split('T')[0];
+        });
+        const payoffs = sorted.map(e => parseFloat(e.payoff) || 0);
+        const nominals = sorted.map(e => parseFloat(e.nominalValue) || 0);
+
+        const option = {
+          backgroundColor: 'transparent',
+          textStyle: { fontFamily: 'Outfit, sans-serif' },
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'cross', label: { backgroundColor: '#1e293b' } },
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            borderColor: 'rgba(255,255,255,0.1)',
+            backdropFilter: 'blur(10px)',
+            textStyle: { color: '#f8fafc', fontSize: 13, fontFamily: 'Outfit, sans-serif' },
+            padding: [10, 15]
+          },
+          legend: {
+            data: ['Payoff Output', 'Nominal Value Trajectory'],
+            top: 0,
+            right: 10,
+            textStyle: { color: '#94a3b8', fontSize: 12 }
+          },
+          grid: { left: '3%', right: '3%', bottom: '10%', top: '15%', containLabel: true },
+          xAxis: [
+            {
+              type: 'category',
+              data: dates,
+              axisLabel: { color: '#64748b', fontSize: 11, fontFamily: 'JetBrains Mono' },
+              axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+              axisTick: { show: false }
+            }
+          ],
+          yAxis: [
+            {
+              type: 'value',
+              name: 'Amount',
+              nameTextStyle: { color: '#64748b', padding: [0, 20, 0, 0] },
+              axisLabel: { color: '#94a3b8', fontSize: 11, fontFamily: 'JetBrains Mono' },
+              splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)', type: 'dashed' } }
+            }
+          ],
+          dataZoom: [
+            { type: 'inside', start: 0, end: 100 },
+            {
+              type: 'slider', showDataShadow: false,
+              start: 0, end: 100, height: 20, bottom: 0,
+              fillerColor: 'rgba(56, 189, 248, 0.15)',
+              borderColor: 'transparent',
+              backgroundColor: 'rgba(0,0,0,0.2)',
+              handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+              handleSize: '80%',
+              handleStyle: { color: '#38bdf8', shadowBlur: 3, shadowColor: 'rgba(0, 0, 0, 0.6)' },
+              textStyle: { color: 'transparent' }
+            }
+          ],
+          series: [
+            {
+              name: 'Payoff Output',
+              type: 'bar',
+              barMaxWidth: 30,
+              itemStyle: {
+                borderRadius: [4, 4, 0, 0],
+                color: (params) => {
+                  // Green gradient for positive, Red for negative
+                  if (params.value > 0) {
+                    return new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#10b981' }, { offset: 1, color: '#064e3b' }]);
+                  } else {
+                    return new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#f43f5e' }, { offset: 1, color: '#881337' }]);
+                  }
+                }
+              },
+              data: payoffs
+            },
+            {
+              name: 'Nominal Value Trajectory',
+              type: 'line',
+              smooth: 0.3,
+              symbol: 'circle',
+              symbolSize: 6,
+              itemStyle: { color: '#38bdf8', borderWidth: 2, borderColor: '#040814' },
+              lineStyle: { width: 3, shadowColor: 'rgba(56,189,248,0.4)', shadowBlur: 10 },
+              areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: 'rgba(56, 189, 248, 0.25)' },
+                  { offset: 1, color: 'rgba(56, 189, 248, 0)' }
+                ])
+              },
+              data: nominals
+            }
+          ]
+        };
+        chart.setOption(option);
+
+        // Resize handling attached globally if possible, but localized here for simplicity
+        window.addEventListener('resize', () => chart.resize());
+      };
+
+      return { html, renderChart };
+    }
+
+    function buildCashflowTable(events) {
+      const MAX_DISPLAY = 20;
+      const rows = [];
+      events.forEach((e, i) => {
+        if (events.length > MAX_DISPLAY && i >= 5 && i < events.length - 5) {
+          if (i === 5) rows.push(`<tr><td colspan="5" class="px-4 py-3 text-center text-slate-500 text-xs font-mono bg-navy-950/30">… ${events.length - 10} hidden events …</td></tr>`);
+          return;
+        }
+        const cls = payoffClass(e.payoff);
+        rows.push(`<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+      <td class="px-4 py-3 text-xs font-mono text-accent-300 font-semibold">${esc(e.eventType)}</td>
+      <td class="px-4 py-3 text-xs text-slate-300 font-mono">${esc(e.time?.slice(0, 10) || '')}</td>
+      <td class="px-4 py-3 text-xs font-mono font-bold text-right ${cls}">${fmtCurrency(e.payoff)}</td>
+      <td class="px-4 py-3 text-xs font-mono text-right text-slate-400">${fmtCurrency(e.nominalValue)}</td>
+      <td class="px-4 py-3 text-xs text-slate-400 max-w-xs truncate" title="${esc(e.description)}">${esc(e.description)}</td>
+    </tr>`);
+      });
+
+      return `<div class="overflow-x-auto border border-white/5 rounded-xl bg-navy-950/40">
+        <table class="w-full text-left">
+          <thead><tr class="border-b border-white/10 bg-black/20 text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+            <th class="px-4 py-3 font-medium">Event Type</th>
+            <th class="px-4 py-3 font-medium">Date</th>
+            <th class="px-4 py-3 font-medium text-right">Payoff</th>
+            <th class="px-4 py-3 font-medium text-right">Nominal Value</th>
+            <th class="px-4 py-3 font-medium">Description</th>
+          </tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+  </div>`;
+    }
+
+    // ── precision ─────────────────────────────────────────────────────────────
+    function buildPrecisionTable(tests) {
+      if (!tests || tests.length === 0)
+        return '<p class="text-slate-500 text-sm font-medium">No precision tests available.</p>';
+
+      const rows = tests.map(t => {
+        const diff = t.difference;
+        const diffNum = parseFloat(diff);
+        const isZero = diff === '0' || diff === '0.000000000000000' || Math.abs(diffNum) < 1e-8;
+        const diffCls = isZero ? 'text-emerald-400' : 'text-amber-400';
+        const badge = isZero
+          ? '<span class="badge border border-emerald-500/30 bg-emerald-900/20 text-emerald-400">Zero Loss</span>'
+          : '<span class="badge border border-amber-500/30 bg-amber-900/20 text-amber-400">Differs</span>';
+        return `<tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+      <td class="px-4 py-3 text-xs font-medium text-slate-200">${esc(t.label)}</td>
+      <td class="px-4 py-3 text-xs font-mono text-emerald-300 font-semibold">${fmt5(t.decimalValue)}</td>
+      <td class="px-4 py-3 text-xs font-mono text-slate-400">${fmt5(t.floatValue)}</td>
+      <td class="px-4 py-3 text-xs font-mono ${diffCls}">${isZero ? '0.00000' : fmt5(diff)}</td>
+      <td class="px-4 py-3">${badge}</td>
+    </tr>`;
+      });
+
+      return `<div class="overflow-x-auto border border-white/5 rounded-xl bg-navy-950/40">
+        <table class="w-full text-left">
+          <thead><tr class="border-b border-white/10 bg-black/20 text-slate-500 text-[10px] uppercase font-bold tracking-wider">
+            <th class="px-4 py-3 font-medium">Test Label</th>
+            <th class="px-4 py-3 font-medium">ShopSpring Decimal</th>
+            <th class="px-4 py-3 font-medium">Standard Float64</th>
+            <th class="px-4 py-3 font-medium">Precision Diff</th>
+            <th class="px-4 py-3 font-medium">Integrity</th>
+          </tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+  </div>`;
+    }
+
+    // ── Syntax Highlighting Engine ───────────────────────────────────────────
+    function highlightXML(xmlStr) {
+      if (!xmlStr) return '';
+      // Simple regex-based syntax highlighter for XML
+      return esc(xmlStr)
+        .replace(/&lt;([^\/?!][^&]*)&gt;/g, '&lt;<span class="text-sky-400 font-semibold">$1</span>&gt;') // Object tags
+        .replace(/&lt;\/([^&]+)&gt;/g, '&lt;/<span class="text-sky-400 font-semibold">$1</span>&gt;') // Closing tags
+        .replace(/&lt;\?([^&]+)\?&gt;/g, '&lt;?<span class="text-slate-500">$1</span>?&gt;') // Processing instructions
+        .replace(/([a-zA-Z0-9_\-]+)=&quot;([^&quot;]*)&quot;/g, '<span class="text-violet-400">$1</span>=<span class="text-emerald-300">"$2"</span>') // Attributes
+        .replace(/&gt;([^&lt;]+)&lt;/g, '&gt;<span class="text-slate-200">$1</span>&lt;'); // Text content
+    }
+
+    function highlightSolidity(solStr) {
+      if (!solStr) return '';
+      return esc(solStr)
+        // Keywords
+        .replace(/\b(pragma|contract|interface|library|function|return|returns|if|else|for|while|do|mapping|struct|modifier|event|constructor|emit|require|revert|assert|public|private|internal|external|pure|view|payable|memory|storage|calldata|override|virtual|using|is)\b/g, '<span class="text-violet-400 font-semibold">$1</span>')
+        // Types
+        .replace(/\b(uint|uint256|int|int256|address|bool|string|bytes|bytes32)\b/g, '<span class="text-sky-400">$1</span>')
+        // Numbers
+        .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="text-emerald-400">$1</span>')
+        // Strings
+        .replace(/(&quot;.*?&quot;)/g, '<span class="text-amber-300">$1</span>')
+        // Comments
+        .replace(/(\/\/.*)/g, '<span class="text-slate-500 italic">$1</span>')
+        // Multi-line comments placeholder logic (simplified for regex)
+        .replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="text-slate-500 italic">$1</span>');
+    }
+
+    // ── ISO 20022 ──────────────────────────────────────────────────────────────
+    function buildISO20022(messages) {
+      if (!messages || messages.length === 0)
+        return '<p class="text-slate-500 text-sm font-medium">No ISO 20022 messages generated.</p>';
+
+      return messages.map(m => {
+        const isValid = m.validationStatus === "Valid";
+        const valBadgeCls = isValid ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30";
+        const valLabel = isValid ? "✓ XSD Validated" : "✗ XSD Invalid";
+        const errDetails = m.validationDetails && m.validationDetails.length > 0
+          ? `<div class="mt-2 text-xs text-red-400 font-mono">${m.validationDetails.map(d => `• ${esc(d)}`).join('<br/>')}</div>`
+          : '';
+
+        return `
+      <div class="mb-5 border border-white/5 rounded-xl p-5 bg-navy-950/40 hover:bg-navy-950/60 transition-colors">
+      <div class="flex items-center gap-4 mb-3">
+        <span class="badge border border-indigo-500/30 bg-indigo-900/20 text-indigo-300">${esc(m.messageType)}</span>
+        <span class="badge border ${valBadgeCls}">${valLabel}</span>
+        <span class="text-xs font-medium text-slate-400 ml-auto">${esc(m.description)}</span>
+      </div>
+      <pre class="text-[11px] bg-[#040814] border border-white/5 rounded-lg p-4 overflow-x-auto text-slate-300 font-mono leading-relaxed max-h-64 custom-scrollbar shadow-inner">${highlightXML(m.xmlContent)}</pre>
+      ${errDetails}
+    </div>`;
+      }).join('');
+    }
+
+    // ── vLEI ──────────────────────────────────────────────────────────────────
+    function buildVLEI(v) {
+      if (!v) return '<p class="text-slate-500 text-sm font-medium">No vLEI verification data present.</p>';
+
+      const statusCls = v.isValid
+        ? 'border border-emerald-500/30 bg-emerald-900/20 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+        : 'border border-red-500/30 bg-red-900/20 text-red-400 shadow-[0_0_15px_rgba(244,63,94,0.15)]';
+      const statusLabel = v.isValid ? '✓ AUTHENTICATED' : '✗ REJECTED';
+
+      const issuerHtml = v.issuer ? `
+      <div class="bg-[#040814] border border-white/5 rounded-xl p-4 mt-4">
+      <div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-3 border-b border-white/5 pb-2">Issuer Credentials</div>
+      <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-xs">
+        <div class="text-slate-500 font-medium">Legal Name</div><div class="text-slate-200 font-semibold">${esc(v.issuer.legalName)}</div>
+        <div class="text-slate-500 font-medium">LEI Code</div><div class="font-mono text-accent-300">${esc(v.issuer.lei)}</div>
+        <div class="text-slate-500 font-medium">Entity Type</div><div class="text-slate-300"><span class="badge border border-white/10 bg-white/5 text-slate-300">${esc(v.issuer.type)}</span></div>
+      </div>
+    </div>` : '';
+
+      const operatorHtml = v.operator ? `
+      <div class="bg-[#040814] border border-white/5 rounded-xl p-4 mt-4">
+      <div class="text-[10px] text-slate-500 uppercase tracking-[0.2em] font-bold mb-3 border-b border-white/5 pb-2">Delegated Operator</div>
+      <div class="grid grid-cols-2 gap-y-3 gap-x-6 text-xs">
+        <div class="text-slate-500 font-medium">Authorized Identity</div><div class="text-slate-200 font-semibold">${esc(v.operator.legalName)}</div>
+        <div class="text-slate-500 font-medium">Official Role OOR</div><div class="text-slate-300">${esc(v.operator.officialRole)}</div>
+      </div>
+    </div>` : '';
+
+      const errHtml = v.errors?.length
+        ? `<div class="mt-4 p-3 rounded-xl border border-red-500/20 bg-red-950/30"><div class="text-[10px] text-red-400 uppercase tracking-[0.2em] font-bold mb-2">Authentication Errors</div>${v.errors.map(e => `<div class="text-xs text-red-300/90 font-mono mb-1">• ${esc(e)}</div>`).join('')}</div>`
+        : '';
+
+      return `<div class="bg-navy-950/40 border border-white/5 rounded-2xl p-6">
+    <div class="flex items-center gap-4 mb-2">
+      <span class="badge ${statusCls} px-4 py-1.5 text-xs">${statusLabel}</span>
+      <span class="text-xs font-medium text-slate-400">Security Policy: <span class="text-slate-200">${esc(v.policyName)}</span></span>
+    </div>
+    <div class="text-xs text-slate-500 mt-2">Cryptographic Verification Timestamp: <span class="text-slate-300 font-mono">${v.verifiedAt ? new Date(v.verifiedAt).toLocaleString() : '—'}</span></div>
+    ${issuerHtml}${operatorHtml}${errHtml}
+  </div>`;
+    }
+
+    // ── Solidity ──────────────────────────────────────────────────────────────
+    function buildSolidity(files) {
+      if (!files || files.length === 0)
+        return '<p class="text-slate-500 text-sm font-medium">No Solidity artifacts generated.</p>';
+
+      if (files.length === 1) {
+        return solidityFileBlock(files[0]);
+      }
+
+      const tabId = 'sol-' + Math.random().toString(36).slice(2, 7);
+      const tabs = files.map((f, i) =>
+        `<button onclick="switchSolTab('${tabId}',${i})" id="${tabId}-tab-${i}"
+      class="px-4 py-2 text-xs font-semibold rounded-lg transition-colors border ${i === 0 ? 'bg-accent-600/20 border-accent-500/50 text-accent-300' : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/5'}">
+        ${esc(f.filename.split('/').pop())}
+    </button>`).join('');
+
+      const panes = files.map((f, i) =>
+        `<div id="${tabId}-pane-${i}" class="${i === 0 ? 'fade-in' : 'hidden'} mt-4">${solidityFileBlock(f)}</div>`).join('');
+
+      return `<div>
+        <div class="flex flex-wrap gap-2 mb-2 p-1 border border-white/5 rounded-xl bg-navy-950/40 w-fit">${tabs}</div>
+    ${panes}
+  </div>`;
+    }
+
+    function solidityFileBlock(f) {
+      const lines = (f.content.match(/\n/g) || []).length + 1;
+      let compHtml = '';
+
+      if (f.compilerOutput) {
+        try {
+          let out = JSON.parse(f.compilerOutput);
+          if (out.success) {
+            compHtml = `<span class="badge border border-emerald-500/30 bg-emerald-900/20 text-emerald-400 text-[10px] ml-2">✓ Compiled (solc)</span>`;
+          } else {
+            compHtml = `<span class="badge border border-red-500/30 bg-red-900/20 text-red-400 text-[10px] ml-2">✗ Compilation Errors</span>
+                  <div class="mt-2 text-[10px] text-red-400 font-mono">${(out.errors || []).map(e => esc(e)).join('<br/>')}</div>`;
+          }
+        } catch (e) {
+          compHtml = `<span class="badge border border-slate-500/30 bg-slate-800 text-slate-400 text-[10px] ml-2">⚠️ Compiler Output Unparsable</span>`;
+        }
+      } else {
+        compHtml = `<span class="badge border border-amber-500/30 bg-amber-900/20 text-amber-400 text-[10px] ml-2">Mock Engine Generated</span>`;
+      }
+
+      return `<div class="border border-white/5 rounded-xl overflow-hidden shadow-inner flex flex-col">
+    <div class="flex items-center gap-3 px-5 py-3 bg-[#040814] border-b border-white/5">
+      <span class="text-xs font-mono font-semibold text-accent-400">${esc(f.filename)}</span>
+      <span class="badge border border-slate-700 bg-slate-800 text-slate-300 text-[10px]">${esc(f.fileType)}</span>
+      ${compHtml}
+      <div class="ml-auto text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-1 rounded">${lines} LOC</div>
+    </div>
+    <pre class="text-[11px] bg-navy-950/80 p-5 overflow-x-auto text-emerald-300/90 font-mono leading-relaxed max-h-[500px] custom-scrollbar selection:bg-accent-500/30">${highlightSolidity(f.content)}</pre>
+  </div>`;
+    }
+
+    window.switchSolTab = function (tabId, idx) {
+      document.querySelectorAll(`[id ^= "${tabId}-tab-"]`).forEach((b, i) => {
+        b.className = `px - 4 py - 2 text - xs font - semibold rounded - lg transition - colors border ${i === idx ? 'bg-accent-600/20 border-accent-500/50 text-accent-300' : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/5'} `;
+      });
+      document.querySelectorAll(`[id ^= "${tabId}-pane-"]`).forEach((p, i) => {
+        p.classList.toggle('hidden', i !== idx);
+        if (i === idx) {
+          p.classList.remove('fade-in');
+          void p.offsetWidth;
+          p.classList.add('fade-in');
+        }
+      });
+    };
+
+    // ── init ───────────────────────────────────────────────────────────────────
+    (async function init() {
+      await Promise.all([checkHealth(), loadScenarioCards()]);
+    })();
+  </script>
+</body>
+
+</html>
