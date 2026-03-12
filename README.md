@@ -39,7 +39,8 @@ Demonstrates the **FinanceVM (FVM)** platform integrating four open-source proje
 ## Quick Start — Web Demo (recommended)
 
 ```bash
-# From the ACTUS-FVM project root:
+git clone https://github.com/smpebble/ACTUS-Hackathon_FinanceVM_Demo
+cd ACTUS-Hackathon_FinanceVM_Demo
 go run cmd/server/main.go
 ```
 
