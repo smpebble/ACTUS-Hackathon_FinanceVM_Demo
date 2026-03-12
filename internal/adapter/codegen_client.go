@@ -18,13 +18,15 @@ import (
 
 // CodegenClient wraps the actus-go Solidity code generator.
 type CodegenClient struct {
-	generator *solidity.Generator
+	generator  *solidity.Generator
+	scriptsDir string
 }
 
 // NewCodegenClient creates a new code generation client.
-func NewCodegenClient() *CodegenClient {
+func NewCodegenClient(baseDir string) *CodegenClient {
 	return &CodegenClient{
-		generator: solidity.NewGenerator(),
+		generator:  solidity.NewGenerator(),
+		scriptsDir: filepath.Join(baseDir, "scripts"),
 	}
 }
 
@@ -152,7 +154,8 @@ func (c *CodegenClient) GenerateSolidityContract(
 	}
 	// Run compilation using local node script
 	compileOut := ""
-	cmd := exec.Command("node", "scripts/compile_solidity.js")
+	cmd := exec.Command("node", "compile_solidity.js")
+	cmd.Dir = c.scriptsDir
 	cmd.Stdin = bytes.NewReader([]byte(generated.MainFile.Content))
 	var outBytes bytes.Buffer
 	cmd.Stdout = &outBytes

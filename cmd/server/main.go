@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/smpebble/actus-fvm/internal/api"
 )
@@ -26,6 +28,19 @@ func main() {
 	addr := ":8080"
 	if port := os.Getenv("PORT"); port != "" {
 		addr = ":" + port
+	}
+
+	// Auto-install npm dependencies for the Solidity compiler if missing.
+	scriptsDir := filepath.Join(baseDir, "scripts")
+	if _, err := os.Stat(filepath.Join(scriptsDir, "node_modules")); os.IsNotExist(err) {
+		fmt.Println("  Installing npm dependencies for Solidity compiler...")
+		npmCmd := exec.Command("npm", "install")
+		npmCmd.Dir = scriptsDir
+		if out, err := npmCmd.CombinedOutput(); err != nil {
+			fmt.Printf("  Warning: npm install failed: %v\n%s\n", err, out)
+		} else {
+			fmt.Println("  npm install complete.")
+		}
 	}
 
 	server := api.NewServer(baseDir)

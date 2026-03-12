@@ -32,7 +32,7 @@ func NewScenarioContext(baseDir string) *ScenarioContext {
 		FVM:     adapter.NewFVMClient(),
 		VLEI:    adapter.NewVLEIClient(),
 		ISO:     adapter.NewISO20022Client("FVMBTWTPXXX", "FinanceVM Taiwan"),
-		Codegen: adapter.NewCodegenClient(),
+		Codegen: adapter.NewCodegenClient(baseDir),
 		BaseDir: baseDir,
 	}
 }
