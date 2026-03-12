@@ -8,4 +8,4 @@ require (
 	github.com/yourusername/actus-go v0.0.0
 )
 
-replace github.com/yourusername/actus-go => C:/Users/JIM_LIN/Desktop/actus-go
+replace github.com/yourusername/actus-go => ./actus-go
